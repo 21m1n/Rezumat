@@ -3,7 +3,7 @@ research/repos/*
 .DS_Store
 .env
 *.csv
-
+output/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
