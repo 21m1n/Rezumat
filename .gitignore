@@ -1,3 +1,4 @@
 data/*
 research/repos/*
 .DS_Store
+.env
