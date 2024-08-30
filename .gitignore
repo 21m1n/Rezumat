@@ -3,7 +3,6 @@ research/repos/*
 .DS_Store
 .env
 *.csv
-output/
 output_*/
 
 # Byte-compiled / optimized / DLL files
