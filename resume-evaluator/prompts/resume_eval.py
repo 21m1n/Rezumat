@@ -82,7 +82,7 @@ STRICTLY ADHERE TO THE FOLLOWING JSON FORMAT (do not output anything else, like 
     "suitability": "yes", "no", "kiv"
     "strengths": [],
     "potential_concerns": [],
-    "missing_skills": [name_of_the_skill: "essential" or "advantageous"]`
+    "missing_skills": [name_of_the_skill: "essential" or "advantageous"]
 
 }}
 """
