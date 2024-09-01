@@ -14,56 +14,89 @@ current_index = 0
 import json
 from tabulate import tabulate
 
+import json
+from tabulate import tabulate
+
 def format_json_to_markdown(json_data):
     data = json.loads(json_data)
     
     markdown = "# Assessment:\n\n"
     markdown += f"- **Suitability:** {data['assessment']['suitability']}\n"
     markdown += "  - **Reasons:**\n"
-    for reason in data['assessment']['reasons']:
-        markdown += f"    - {reason}\n"
+    try:
+        for reason in data["assessment"]["reasons"]:
+            markdown += f"    - {reason}\n"
+    except KeyError:
+        markdown += "    - No reasons provided\n"
     markdown += "  - **Missing Skills:**\n"
-    for skill in data['assessment']['missing_skills']:
-        markdown += f"    - {skill}\n"
+    try:
+        for skill in data["assessment"]["missing_skills"]:
+            markdown += f"    - {skill}\n"
+    except KeyError:
+        markdown += "    - No missing skills listed\n"
     markdown += "  - **Potential Concerns:**\n"
-    for concern in data['assessment']['potential_concerns']:
-        markdown += f"    - {concern}\n"
+    try:
+        for concern in data["assessment"]["potential_concerns"]:
+            markdown += f"    - {concern}\n"
+    except KeyError:
+        markdown += "    - No potential concerns listed\n"
     markdown += "  - **Strengths:**\n"
-    for strength in data['assessment']['strengths']:
-        markdown += f"    - {strength}\n"
+    try:
+        for strength in data["assessment"]["strengths"]:
+            markdown += f"    - {strength}\n"
+    except KeyError:
+        markdown += "    - No strengths listed\n"
 
     markdown += "\n## Scores:\n\n"
     scores = [
         ["Category", "Original Score", "Recalibrated Score"],
-        ["Technical Skills", data['resume_evaluation']['original_scores']['technical_skills'], data['recalibrated_scores']['technical_skills']],
-        ["Soft Skills", data['resume_evaluation']['original_scores']['soft_skills'], data['recalibrated_scores']['soft_skills']],
-        ["Experience", data['resume_evaluation']['original_scores']['experience'], data['recalibrated_scores']['experience']],
-        ["Education", data['resume_evaluation']['original_scores']['education'], data['recalibrated_scores']['education']]
+        ["Technical Skills", data["resume_evaluation"]["original_scores"]["technical_skills"], data["recalibrated_scores"]["technical_skills"]],
+        ["Soft Skills", data["resume_evaluation"]["original_scores"]["soft_skills"], data["recalibrated_scores"]["soft_skills"]],
+        ["Experience", data["resume_evaluation"]["original_scores"]["experience"], data["recalibrated_scores"]["experience"]],
+        ["Education", data["resume_evaluation"]["original_scores"]["education"], data["recalibrated_scores"]["education"]]
     ]
     markdown += tabulate(scores, headers="firstrow", tablefmt="pipe") + "\n\n"
 
     markdown += "**Reasons:**\n"
     markdown += "- **Explicit Missing Skills:**\n"
-    for skill in data['resume_evaluation']['missing_skills']:
-        markdown += f"  - {skill}\n"
+    try:
+        for skill in data["resume_evaluation"]["missing_skills"]:
+            markdown += f"  - {skill}\n"
+    except KeyError:
+        markdown += "  - No explicit missing skills listed\n"
     markdown += "- **Inferred Experiences:**\n"
-    for skill, inference in data['deeper_analysis']['inferred_experiences'].items():
-        markdown += f"  - {skill}: {inference}\n"
+    try:
+        for skill, inference in data["deeper_analysis"]["inferred_experiences"].items():
+            markdown += f"  - {skill}: {inference}\n"
+    except KeyError:
+        markdown += "  - No inferred experiences listed\n"
 
     markdown += "\n## Job Description Analysis:\n"
     markdown += "- **Essential Tech Skills:**\n"
-    for skill in data['job_description_analysis']['technical_skills']['essential']:
-        markdown += f"  - {skill}\n"
+    try:
+        for skill in data["job_description_analysis"]["technical_skills"]["essential"]:
+            markdown += f"  - {skill}\n"
+    except KeyError:
+        markdown += "  - No essential tech skills listed\n"
     markdown += "- **Advantageous Skills:**\n"
-    for skill in data['job_description_analysis']['technical_skills']['advantageous']:
-        markdown += f"  - {skill}\n"
+    try:
+        for skill in data["job_description_analysis"]["technical_skills"]["advantageous"]:
+            markdown += f"  - {skill}\n"
+    except KeyError:
+        markdown += "  - No advantageous skills listed\n"
     markdown += "- **Soft Skills:**\n"
-    for skill in data['job_description_analysis']['soft_skills']:
-        markdown += f"  - {skill}\n"
+    try:
+        for skill in data["job_description_analysis"]["soft_skills"]:
+            markdown += f"  - {skill}\n"
+    except KeyError:
+        markdown += "  - No soft skills listed\n"
     markdown += f"- **Level of Experience:** {data['job_description_analysis']['level_of_exp']}\n"
     markdown += "- **Education:**\n"
-    for edu in data['job_description_analysis']['education']:
-        markdown += f"  - {edu}\n"
+    try:
+        for edu in data["job_description_analysis"]["education"]:
+            markdown += f"  - {edu}\n"
+    except KeyError:
+        markdown += "  - No education requirements listed\n"
 
     return markdown
 
@@ -72,8 +105,7 @@ def load_llama3_reasoning(job_id, cv_id):
     if json_path.exists():
       try:  
         with open(json_path, "r") as f:
-            data = json.load(f)
-            return json.dumps(data, indent=2)
+          return format_json_to_markdown(f.read()) 
       except Exception as e:
         return f"Error loading reasoning: {e}"
     return "Reasoning not available"
@@ -83,8 +115,7 @@ def load_gpt4o_reasoning(job_id, cv_id):
     if json_path.exists():
       try:
         with open(json_path, "r") as f:
-            data = json.load(f)
-            return json.dumps(data, indent=2)
+          return format_json_to_markdown(f.read()) 
       except Exception as e:
         return f"Error loading reasoning: {e}"
     return "Reasoning not available"
@@ -135,9 +166,10 @@ with gr.Blocks() as demo:
     
     with gr.Row():
       with gr.Column():
-        llama3_reasoning = gr.Code(label="Llama3 Reasoning", language="json")
+        llama3_reasoning = gr.Markdown(label="Llama3 Reasoning")
       with gr.Column():
-        gpt4o_reasoning = gr.Code(label="GPT4o Reasoning", language="json")
+        gpt4o_reasoning = gr.Markdown(label="GPT4o Reasoning")
+
     
     with gr.Row():
         shortlist_btn = gr.Button("Shortlist", variant="primary")
