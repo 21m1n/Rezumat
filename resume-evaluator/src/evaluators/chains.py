@@ -1,13 +1,15 @@
-from langchain_openai import ChatOpenAI
-from langchain_groq import ChatGroq
 from langchain_anthropic import ChatAnthropic
-from langchain_ollama import ChatOllama
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import PromptTemplate
-from langchain_core.language_models.chat_models import BaseChatModel
-from ..prompts import TWO_STAGE_EVAL_JD_PROMPT, TWO_STAGE_EVAL_CV_PROMPT
+from langchain_core.runnables.base import RunnableSequence
+from langchain_groq import ChatGroq
+from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 
-def get_model(model_text: str, model_id: str, temperature: float=0, max_tokens: int=2048):
+from ..prompts import TWO_STAGE_EVAL_CV_PROMPT, TWO_STAGE_EVAL_JD_PROMPT
+
+
+def get_model(model_text: str, model_id: str, temperature: float=0, max_tokens: int=2048) -> Tuple[str, RunnableSequence]:
     """get model based on the input data"""
 
     if model_text == "groq":
@@ -41,6 +43,5 @@ def get_eval_chain(model_text: str, model_id: str, eval_type: str):
     raise ValueError("Invalid type")
     
   grader = eval_prompt | model | JsonOutputParser()
-  model_tuples = (model_text.lower(), model)
-    
-  return grader, model_tuples
+  
+  return (model_text.lower(), grader)
