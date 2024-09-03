@@ -21,18 +21,18 @@ def get_model(model_text: str, model_id: str, temperature: float=0, max_tokens: 
       
     return model
   
-def get_eval_chain(model_text: str, model_id: str, type: str):
+def get_eval_chain(model_text: str, model_id: str, eval_type: str):
 
   model_text = model_text.lower()
 
   model = get_model(model_text, model_id)
   
-  if type == "jd":
+  if eval_type == "jd":
     eval_prompt = PromptTemplate(
       input_variables=["job_description"],
       template=TWO_STAGE_EVAL_JD_PROMPT
       )
-  elif type == "cv":
+  elif eval_type == "cv":
     eval_prompt = PromptTemplate(
       input_variables=["job_description", "resume"],
       template=TWO_STAGE_EVAL_CV_PROMPT
