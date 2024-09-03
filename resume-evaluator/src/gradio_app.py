@@ -1,141 +1,94 @@
-import json
-import logging
-import os
-import sys
-import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List, Tuple, Union
-from uuid import uuid4
-
 import gradio as gr
-import pandas as pd
-from dotenv import find_dotenv, load_dotenv
-from langchain.prompts import PromptTemplate
-from langchain_anthropic import ChatAnthropic
-from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables.base import RunnableSequence
-from langchain_groq import ChatGroq
-from langchain_ollama import ChatOllama
-from langchain_openai import ChatOpenAI
-from pypdf import PdfReader
-from tqdm import tqdm
-from tqdm.auto import tqdm
+import PyPDF2
+import io
 
-# Add the parent directory to the Python path
-current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.append(parent_dir)
-
-
-from .evaluation.resume_evaluator import (two_stage_eval_cv,
-                                                           two_stage_eval_jd)
-from .prompts.two_stage_eval_cv import \
-    TWO_STAGE_EVAL_CV_PROMPT
-from .prompts.two_stage_eval_jd import \
-    TWO_STAGE_EVAL_JD_PROMPT
-
-# Global variables
-OUTPUT_PATH = Path("./output")
-LOG_FILE_PATH = Path("./logs")
-ENV_PATH = "../../.env"
-
-NUM_WORKERS = os.cpu_count()
-TEMPERATURE = 0.0
-MAX_TOKENS = 8192
-GROQ_MODEL = "llama3-70b-8192"
-
-# load environment variables
-load_dotenv(find_dotenv(ENV_PATH))
-
-# get current time
-current_time = datetime.now().strftime(("%Y%m%d_%H%M"))
-
-# log file
-log_file = os.path.join(LOG_FILE_PATH, "evaluating_log.txt")
-logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO, filename=log_file)
-
-# Set up the Groq model and prompts
-groq_llm = ChatGroq(model=GROQ_MODEL, temperature=TEMPERATURE, max_tokens=MAX_TOKENS)
-
-jd_eval_prompt = PromptTemplate(
-    input_variables=["job_description"],
-    template=TWO_STAGE_EVAL_JD_PROMPT
-)
-
-cv_eval_prompt = PromptTemplate(
-    input_variables=["job_requirements", "resume"],
-    template=TWO_STAGE_EVAL_CV_PROMPT
-)
-
-groq_jd_grader = jd_eval_prompt | groq_llm | JsonOutputParser()
-groq_cv_grader = cv_eval_prompt | groq_llm | JsonOutputParser()
-
-model_tuples = [("groq_jd_grader", groq_jd_grader)]
-cv_model_tuples = [("groq_cv_grader", groq_cv_grader)]
-
-def parse_pdf(file) -> str:
-    reader = PdfReader(file)
-    return " ".join([page.extract_text() for page in reader.pages])
-
-def process_results(results: List[Dict]) -> pd.DataFrame:
-    df = pd.DataFrame(results)
-    return df
-
-def calculate_scores(df: pd.DataFrame) -> pd.DataFrame:
-    # Implement your scoring logic here
-    # For example:
-    df['recalibrated_overall_score'] = df['overall_score'] * 0.7 + df['technical_skills_score'] * 0.3
-    return df
-
-def evaluate_resumes(job_description: str, resumes: List[gr.File]) -> str:
-    OUTPUT_PATH.mkdir(exist_ok=True)
-    job_id = str(uuid4())
-
-    logging.info(f"Starting evaluation for job ID: {job_id}")
-
-    # Evaluate job description
-    job_requirements = two_stage_eval_jd(model_tuples, job_description, job_id, OUTPUT_PATH)
-    logging.info(f"Job requirements extracted for job ID: {job_id}")
-
-    # Evaluate resumes
-    results = []
-    for resume in tqdm(resumes, desc="Evaluating resumes"):
-        cv_id = str(uuid4())
+def process_input(text_input, additional_text, file_upload, input_type, api_key, interface, model, technical_skills, soft_skills, experience, education):
+    content = ""
+    
+    # Process text input
+    if text_input:
+        content += f"## Main Text Input\n\n{text_input}\n\n"
+    
+    # Process additional text or file upload
+    if input_type == "Text" and additional_text:
+        content += f"## Additional Text Input\n\n{additional_text}\n\n"
+    elif input_type == "File" and file_upload is not None:
         try:
-            cv_text = parse_pdf(resume.name)
-            result = two_stage_eval_cv(cv_model_tuples, json.dumps(job_requirements), job_id, cv_text, cv_id, OUTPUT_PATH)
-            results.append(result)
+            if file_upload.name.endswith('.pdf'):
+                pdf_reader = PyPDF2.PdfReader(io.BytesIO(file_upload.read()))
+                file_content = ""
+                for page in pdf_reader.pages:
+                    file_content += page.extract_text() + "\n"
+            else:
+                file_content = file_upload.read().decode('utf-8')
+            content += f"## Uploaded File Content\n\n{file_content}\n\n"
         except Exception as e:
-            logging.error(f"Error processing resume {resume.name}: {str(e)}")
+            content += f"Error processing file: {str(e)}\n\n"
+    
+    # Add processing details
+    content += f"API Key: {'*' * len(api_key)}\nInterface: {interface}\nModel: {model}\n"
+    content += f"Weightage:\n- Technical Skills: {technical_skills}%\n- Soft Skills: {soft_skills}%\n- Experience: {experience}%\n- Education: {education}%"
+    
+    return content
 
-    logging.info(f"Completed evaluation of {len(results)} resumes for job ID: {job_id}")
+def reset_interface():
+    return (
+        "", "Text", "", None, "", 60, 10, 10, 10
+    )
 
-    # Process results
-    df = process_results(results)
-    df = calculate_scores(df)
+with gr.Blocks() as demo:
+    gr.Markdown("# ✏️ Resume Evaluator")
+    
+    with gr.Row():
+        with gr.Column(scale=2):
+            gr.Markdown("### Weightage")
+            api_key22 = gr.Textbox(label="API Key", type="password")
+            technical_skills = gr.Slider(minimum=0, maximum=100, value=60, step=1, label="Technical Skills")
+            soft_skills = gr.Slider(minimum=0, maximum=100, value=10, step=1, label="Soft Skills")
+            experience = gr.Slider(minimum=0, maximum=100, value=10, step=1, label="Experience")
+            education = gr.Slider(minimum=0, maximum=100, value=10, step=1, label="Education")
+            # Side column (20% of the screen)
+            api_key = gr.Textbox(label="API Key", type="password")
+            interface = gr.Dropdown(["Groq", "OpenAI", "Anthropic"], label="Interface", value="Groq")
+            model = gr.Dropdown(["llama3-70b-8192", "gpt-3.5-turbo", "gpt-4"], label="Model", value="llama3-70b-8192")
+            
+            # gr.Markdown("### Weightage")
 
+        
+        with gr.Column(scale=8):
+            # Main content (80% of the screen)
+            text_input = gr.Textbox(label="Enter your text", lines=15)
+            
+            input_type = gr.Radio(["Text", "File"], label="Input Type", value="Text")
+            
+            with gr.Row() as additional_input_row:
+                additional_text = gr.Textbox(label="Additional Text Input", lines=5, visible=False)
+                file_upload = gr.File(label="Upload File", file_count="multiple", file_types=["pdf"], visible=False)
+            
+            output = gr.Markdown(label="Output")
+    
+            with gr.Row():
+                submit_btn = gr.Button("Submit")
+                reset_btn = gr.Button("Reset")
+    
+    def update_input_type(choice):
+        if choice == "Text":
+            return gr.update(visible=True), gr.update(visible=False)
+        else:
+            return gr.update(visible=False), gr.update(visible=True)
+    
+    input_type.change(update_input_type, inputs=[input_type], outputs=[additional_text, file_upload])
+    
+    submit_btn.click(
+        fn=process_input,
+        inputs=[text_input, additional_text, file_upload, input_type, api_key, interface, model, technical_skills, soft_skills, experience, education],
+        outputs=output
+    )
+    
+    reset_btn.click(
+        fn=reset_interface,
+        inputs=[],
+        outputs=[text_input, input_type, additional_text, file_upload, output, technical_skills, soft_skills, experience, education]
+    )
 
-    # Save results to CSV
-    output_file = OUTPUT_PATH / f"evaluation_results_{job_id}.csv"
-    df.to_csv(output_file, index=False)
-    logging.info(f"Results saved to {output_file}")
-
-    return str(output_file)
-
-# Create the Gradio interface
-iface = gr.Interface(
-    fn=evaluate_resumes,
-    inputs=[
-        gr.Textbox(label="Job Description", lines=10),
-        gr.File(label="Resumes", file_count="multiple")
-    ],
-    outputs=gr.Textbox(label="Evaluation Results"),
-    title="Resume Evaluation App",
-    description="Upload a job description and multiple resumes to evaluate and shortlist potential candidates."
-)
-
-if __name__ == "__main__":
-    iface.launch()
+demo.launch()
