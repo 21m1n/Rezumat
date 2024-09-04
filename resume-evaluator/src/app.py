@@ -218,7 +218,6 @@ def create_gradio_interface():
         def process_results(results_df: Union[pd.DataFrame, List[dict]]):
             
             logging.info("Processing results...")
-            logging.info(f"DataFrame type: {results_df}")
 
             if results_df is None or results_df.empty:
                 logging.warning("DataFrame is None or empty")
@@ -244,9 +243,6 @@ def create_gradio_interface():
                 "Error: DataFrame expected"  # Debug output
               ]
                   
-            logging.info(f"DataFrame shape: {results_df.shape}")
-            logging.info(f"DataFrame columns: {results_df.columns}")
-              
             try:              
                 total = len(results_df)
                 yes = len(results_df[results_df["suitability"] == "yes"])
