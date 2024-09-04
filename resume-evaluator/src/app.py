@@ -72,12 +72,12 @@ def evaluate_cv(cv_grader_tuple: Tuple[str, RunnableSequence], job_data: List[Tu
     """Evaluate the CVs"""
     process_all_pairs(cv_grader_tuple, job_data, cv_data, output_dir=CV_OUTPUT_DIR)
   
-def calculate_and_save_fit_scores(input_data: InputModel, cv_data: List[Tuple[str, str]], job_data: List[Tuple[str, dict]]) -> pd.DataFrame:
+def calculate_and_save_fit_scores(input_data: InputModel, cv_data: List[Tuple[str, str]], job_tuple: List[Tuple[str, dict]]) -> pd.DataFrame:
     """Calculate the fit scores"""
     fit_scores_df = calculate_fit_scores(CV_OUTPUT_DIR, input_data.weights)
     
     cv_df = pd.DataFrame(cv_data, columns=["cv_id", "cv_text"])
-    jd_df = pd.DataFrame(job_data, columns=["job_id", "job_text"])
+    jd_df = pd.DataFrame(job_tuple, columns=["job_id", "job_text"])
     
     fit_scores_df = pd.merge(fit_scores_df, jd_df, on="job_id", how="left")
     fit_scores_df = pd.merge(fit_scores_df, cv_df, on="cv_id", how="left")
@@ -116,11 +116,11 @@ def process_input(text_input, additional_text, file_upload, input_type, api_key,
     
     cv_data = process_cv_data(input_data, file_upload)
     job_data = read_job_data()
-    
+    job_tuples = pd.read_csv(f"{CSV_OUTPUT_DIR}/job_tuples.csv")
     cv_grader_tuple = get_eval_chain(input_data.interface, input_data.model, os.getenv("GROQ_API_KEY"), eval_type="cv")
     evaluate_cv(cv_grader_tuple, job_data, cv_data)
     
-    eval_results = calculate_and_save_fit_scores(input_data, cv_data, job_data)
+    eval_results = calculate_and_save_fit_scores(input_data, cv_data, job_tuples)
     
     logging.info(f"processing completed. results saved in : {CSV_OUTPUT_DIR}, results type: {type(eval_results)}")
     return eval_results
@@ -147,17 +147,14 @@ def create_gradio_interface():
                     
                     # weights section
                     gr.Markdown("### Weightage (Total must be 100)")
-                    technical_skills = gr.Slider(minimum=0, maximum=100, value=50, step=1, label="Technical Skills")
-                    soft_skills = gr.Slider(minimum=0, maximum=100, value=20, step=1, label="Soft Skills")
+                    technical_skills = gr.Slider(minimum=0, maximum=100, value=60, step=1, label="Technical Skills")
+                    soft_skills = gr.Slider(minimum=0, maximum=100, value=10, step=1, label="Soft Skills")
                     experience = gr.Slider(minimum=0, maximum=100, value=20, step=1, label="Experience")
                     education = gr.Slider(minimum=0, maximum=100, value=10, step=1, label="Education")
                 
                 with gr.Column(scale=8):
                   
                     # Main content (80% of the screen)
-                    
-                    # # initial view 
-                    # with gr.Group() as initial_view:
                         
                     # job description section
                     jd_text_input = gr.TextArea(label="Job Description", lines=12, info="Paste the job description here")
@@ -204,9 +201,19 @@ def create_gradio_interface():
               return gr.update(visible=False), gr.update(visible=True)
             
         def reset_interface():
-            return (
-                "", "Text", "", None, "", 50, 20, 20, 10
-            ) 
+            return [
+              "",  # jd_text_input
+              "",  # additional_text
+              None,  # file_upload
+              "Text",  # input_type
+              "",  # api_key
+              "Groq",  # interface
+              "llama3-70b-8192",  # model
+              60,  # technical_skills
+              10,  # soft_skills
+              20,  # experience
+              10,  # education
+            ]
     
         def process_results(results_df: Union[pd.DataFrame, List[dict]]):
             
@@ -246,13 +253,11 @@ def create_gradio_interface():
                 no = len(results_df[results_df["suitability"] == "no"])
                 kiv = len(results_df[results_df["suitability"] == "kiv"])
                 
-                top_candidates = results_df[results_df["suitability"].isin(["yes", "kiv"])].sort_values(by="recalibrated_overall_score", ascending=False).head(5)
-                top_candidates_list = top_candidates["cv_text"].tolist()
+                # top_candidates = results_df[results_df["suitability"].isin(["yes", "kiv"])].sort_values(by="recalibrated_overall_score", ascending=False).head(5)
+                top_candidates = results_df.sort_values(by="recalibrated_overall_score", ascending=False).head(5)
+                top_candidates_list = top_candidates["cv_id"].tolist()
                 
                 job_description = results_df["job_text"].iloc[0] if not results_df.empty else ""
-                
-                debug_msg = f"Total: {total}, Yes: {yes}, No: {no}, KIV: {kiv}, Top candidates: {top_candidates_list}"
-                logging.info(debug_msg)
                 
                 return (
                     gr.update(visible=False), # hide initial view 
@@ -308,7 +313,7 @@ def create_gradio_interface():
         reset_btn.click(
             fn=reset_interface,
             inputs=[],
-            outputs=[jd_text_input, input_type, additional_text, file_upload, initial_view, results_view, technical_skills, soft_skills, experience, education]
+            outputs=[jd_text_input, additional_text, file_upload, input_type, api_key, interface, model, technical_skills, soft_skills, experience, education]
         )
         
         top_candidates.change(
