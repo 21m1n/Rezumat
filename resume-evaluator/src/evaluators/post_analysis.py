@@ -63,6 +63,6 @@ def calculate_fit_scores(eval_results_folder: str, weights: Dict[str, float]) ->
     # Calculate overall scores using pandas' dot product
     for score_type in score_types:
         columns = [f"{score_type}_{skill}" for skill in weights.keys()]
-        df[score_type+"_overall_score"] = df[columns].values.dot(pd.Series(weights).values)
+        df[score_type+"_overall_score"] = df[columns].values.dot(pd.Series(weights).values)/100.0
     
     return df
