@@ -18,6 +18,7 @@ from .evaluators.post_analysis import calculate_fit_scores
 from .models.input_models import CandidateEvaluationWeights, InputModel
 from .preprocessing.parsers.pdf_parser import process_pdfs
 from .utils.process_jobs import process_all_jobs, process_all_pairs
+from .utils.helper import format_job_description_analysis
 
 # Use config throughout the file
 PDF_UPLOAD_FOLDER = config.PDF_UPLOAD_FOLDER
@@ -148,7 +149,7 @@ def create_gradio_interface():
                     model = gr.Dropdown(["llama3-70b-8192", "gpt-3.5-turbo", "gpt-4"], label="Model", value="llama3-70b-8192")
                     
                     # weights section
-                    gr.Markdown("### Weightage (Total must be 100)")
+                    gr.Markdown("### Weights (Total must be 100)")
                     technical_skills = gr.Slider(minimum=0, maximum=100, value=60, step=1, label="Technical Skills")
                     soft_skills = gr.Slider(minimum=0, maximum=100, value=10, step=1, label="Soft Skills")
                     experience = gr.Slider(minimum=0, maximum=100, value=20, step=1, label="Experience")
@@ -167,8 +168,6 @@ def create_gradio_interface():
                         additional_text = gr.Textbox(label="Resume", lines=5, visible=True, info="Paste the resume here")
                         file_upload = gr.File(label="Upload File", file_count="multiple", file_types=["pdf"], visible=False, )
                     
-                    # output = gr.Markdown(label="Output")
-        
                     with gr.Row():
                         submit_btn = gr.Button("Evaluate")
                         reset_btn = gr.Button("Reset")
@@ -182,19 +181,26 @@ def create_gradio_interface():
                 no_count = gr.Number(label="No")
                 kiv_count = gr.Number(label="KIV")
                 
-            with gr.Row():
-                with gr.Column():
+            with gr.Row(equal_height=True):
+                with gr.Column(scale=1):
                     suitability_filter = gr.Radio(["All", "Yes", "No", "KIV"], label="filter by suitability", value="All")
-                with gr.Column():
-                    top_candidates = gr.Dropdown(label="Top Candidates")
+                with gr.Column(scale=1):
+                    top_candidates = gr.Dropdown(label="Top Candidates", )
             
             with gr.Row():
-                jd_display = gr.TextArea(label="Job Description", interactive=False)
-                cv_display = gr.TextArea(label="Selected CV", interactive=False)
-              
-            with gr.Row():
-                strengths = gr.TextArea(label="Strengths", interactive=False)
-                concerns = gr.TextArea(label="Concerns", interactive=False)
+                with gr.Column():
+                    with gr.Tabs():
+                        with gr.TabItem("Job Description"):
+                            jd_display = gr.TextArea(label="Job Description", interactive=False)
+                        with gr.TabItem("JD Analysis"):
+                            job_analysis_display = gr.Markdown(label="Job Analysis")
+                    
+                with gr.Column():
+                    gr.Markdown("## Candidate Details")
+                    score_comparison = gr.Markdown(label="Score Comparison")
+                    cv_display = gr.TextArea(label="Selected CV", interactive=False)
+                    strengths = gr.TextArea(label="Strengths", interactive=False)
+                    concerns = gr.TextArea(label="Concerns", interactive=False)
             
             back_btn = gr.Button("Back")
                     
@@ -259,6 +265,8 @@ def create_gradio_interface():
                 top_candidates_list = top_candidates["cv_id"].tolist()
                 
                 job_description = results_df["job_text"].iloc[0] if not results_df.empty else ""
+                job_analysis = results_df["job_analysis"].iloc[0] if not results_df.empty else ""
+                job_analysis_markdown = format_job_description_analysis(job_analysis)
                 
                 return (
                     gr.update(visible=False), # hide initial view 
@@ -266,6 +274,7 @@ def create_gradio_interface():
                     total, yes, no, kiv, 
                     gr.Dropdown(choices=top_candidates_list, value=top_candidates_list[0] if top_candidates_list else None),
                     job_description,
+                    job_analysis_markdown,
                     results_df # store full results in state 
                 )
             except Exception as e:
@@ -287,6 +296,10 @@ def create_gradio_interface():
             
             if suitability != "All":
                 filtered_df = results_df[results_df["suitability"] == suitability.lower()]
+                
+                if filtered_df.empty:
+                    filtered_df = results_df
+                    gr.Warning("No candidates found for the selected suitability filter. Showing all candidates.")
             else:
                 filtered_df = results_df
             
@@ -294,6 +307,7 @@ def create_gradio_interface():
             candidate_list = candidates["cv_id"].tolist()
             
             return gr.Dropdown(choices=candidate_list, value=candidate_list[0] if candidate_list else None)
+        
         
         def display_candidate_info(cv_id, results_df):
 
@@ -312,6 +326,31 @@ def create_gradio_interface():
                 candidate_info.get("strengths", "No strengths information available"),
                 candidate_info.get("concerns", "No concerns information available")
             )
+            
+        def display_score_comparison(cv_id, results_df):
+            if results_df is None or results_df.empty:
+                return gr.update(value="No score comparison available"), ""
+            
+            candidate_info = results_df[results_df["cv_id"] == cv_id].iloc[0]
+    
+            markdown_text = """
+                | | original_score | recalibrated_score |
+                |------------------|----------------|--------------------|
+                | technical_skills | {:.2f} | {:.2f} |
+                | soft_skills | {:.2f} | {:.2f} |
+                | experience | {:.2f} | {:.2f} |
+                | education | {:.2f} | {:.2f} |
+                | overall | {:.2f} | {:.2f} |
+                """.format(
+                        candidate_info["original_technical_skills"], candidate_info["original_overall_score"],
+                        candidate_info["original_soft_skills"], candidate_info["recalibrated_soft_skills"],
+                        candidate_info["original_experience"], candidate_info["recalibrated_experience"],
+                        candidate_info["original_education"], candidate_info["recalibrated_education"],
+                        candidate_info["original_overall_score"], candidate_info["recalibrated_overall_score"]
+                        )
+            
+            return markdown_text
+          
         
         input_type.change(update_input_type, inputs=[input_type], outputs=[additional_text, file_upload])
         
@@ -322,7 +361,7 @@ def create_gradio_interface():
         ).then(
           fn=process_results,
           inputs=[eval_results],
-          outputs=[initial_view, results_view, total_applicants, yes_count, no_count, kiv_count, top_candidates, jd_display, eval_results]
+          outputs=[initial_view, results_view, total_applicants, yes_count, no_count, kiv_count, top_candidates, jd_display, job_analysis_display, eval_results]
         )
     
         reset_btn.click(
@@ -331,10 +370,6 @@ def create_gradio_interface():
             outputs=[jd_text_input, additional_text, file_upload, input_type, api_key, interface, model, technical_skills, soft_skills, experience, education]
         )
         
-        
-        
-
-            
         suitability_filter.change(
             fn=update_candidate_list,
             inputs=[suitability_filter, eval_results],
@@ -345,6 +380,10 @@ def create_gradio_interface():
           fn=display_candidate_info,
           inputs=[top_candidates, eval_results],
           outputs=[cv_display, strengths, concerns] 
+        ).then(
+          fn=display_score_comparison,
+          inputs=[top_candidates, eval_results],
+          outputs=[score_comparison]
         )
 
         back_btn.click(
