@@ -137,28 +137,28 @@ def create_gradio_interface():
         # add a state to store the eval_results
         eval_results = gr.State()
         
-        
-        with gr.Row():
-            with gr.Column(scale=2):
-                # model selection section
-                api_key = gr.Textbox(label="API Key", type="password")
-                interface = gr.Dropdown(["Groq", "OpenAI", "Anthropic"], label="Interface", value="Groq")
-                model = gr.Dropdown(["llama3-70b-8192", "gpt-3.5-turbo", "gpt-4"], label="Model", value="llama3-70b-8192")
-                
-                # weights section
-                gr.Markdown("### Weightage (Total must be 100)")
-                technical_skills = gr.Slider(minimum=0, maximum=100, value=50, step=1, label="Technical Skills")
-                soft_skills = gr.Slider(minimum=0, maximum=100, value=20, step=1, label="Soft Skills")
-                experience = gr.Slider(minimum=0, maximum=100, value=20, step=1, label="Experience")
-                education = gr.Slider(minimum=0, maximum=100, value=10, step=1, label="Education")
-            
-            with gr.Column(scale=8):
-              
-                # Main content (80% of the screen)
-                
-                # initial view 
-                with gr.Group() as initial_view:
+        with gr.Group() as initial_view:
+            with gr.Row():
+                with gr.Column(scale=2):
+                    # model selection section
+                    api_key = gr.Textbox(label="API Key", type="password")
+                    interface = gr.Dropdown(["Groq", "OpenAI", "Anthropic"], label="Interface", value="Groq")
+                    model = gr.Dropdown(["llama3-70b-8192", "gpt-3.5-turbo", "gpt-4"], label="Model", value="llama3-70b-8192")
                     
+                    # weights section
+                    gr.Markdown("### Weightage (Total must be 100)")
+                    technical_skills = gr.Slider(minimum=0, maximum=100, value=50, step=1, label="Technical Skills")
+                    soft_skills = gr.Slider(minimum=0, maximum=100, value=20, step=1, label="Soft Skills")
+                    experience = gr.Slider(minimum=0, maximum=100, value=20, step=1, label="Experience")
+                    education = gr.Slider(minimum=0, maximum=100, value=10, step=1, label="Education")
+                
+                with gr.Column(scale=8):
+                  
+                    # Main content (80% of the screen)
+                    
+                    # # initial view 
+                    # with gr.Group() as initial_view:
+                        
                     # job description section
                     jd_text_input = gr.TextArea(label="Job Description", lines=12, info="Paste the job description here")
                     input_type = gr.Radio(["Text", "File"], label="Select Resume Type", value="Text", info="Select the type of input") 
@@ -173,28 +173,28 @@ def create_gradio_interface():
                     with gr.Row():
                         submit_btn = gr.Button("Evaluate")
                         reset_btn = gr.Button("Reset")
-                  
-                # results view (initially hidden)
-                with gr.Group(visible=False) as results_view:
-                  
-                    with gr.Row():
-                        total_applicants = gr.Number(label="Total Applicants")
-                        yes_count = gr.Number(label="Yes")
-                        no_count = gr.Number(label="No")
-                        kiv_count = gr.Number(label="KIV")
-                        
-                    with gr.Row():
-                        top_candidates = gr.Dropdown(label="Top Candidates")
-                    
-                    with gr.Row():
-                        jd_display = gr.TextArea(label="Job Description", interactive=False)
-                        cv_display = gr.TextArea(label="Selected CV", interactive=False)
-                      
-                    with gr.Row():
-                        strengths = gr.TextArea(label="Strengths", interactive=False)
-                        concerns = gr.TextArea(label="Concerns", interactive=False)
-                    
-                    back_btn = gr.Button("Back")
+              
+        # results view (initially hidden)
+        with gr.Group(visible=False) as results_view:
+          
+            with gr.Row():
+                total_applicants = gr.Number(label="Total Applicants")
+                yes_count = gr.Number(label="Yes")
+                no_count = gr.Number(label="No")
+                kiv_count = gr.Number(label="KIV")
+                
+            with gr.Row():
+                top_candidates = gr.Dropdown(label="Top Candidates")
+            
+            with gr.Row():
+                jd_display = gr.TextArea(label="Job Description", interactive=False)
+                cv_display = gr.TextArea(label="Selected CV", interactive=False)
+              
+            with gr.Row():
+                strengths = gr.TextArea(label="Strengths", interactive=False)
+                concerns = gr.TextArea(label="Concerns", interactive=False)
+            
+            back_btn = gr.Button("Back")
                     
                 
         def update_input_type(choice):
