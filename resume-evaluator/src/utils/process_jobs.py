@@ -10,9 +10,11 @@ import pandas as pd
 from langchain_core.runnables.base import RunnableSequence
 from tqdm import tqdm
 
+from ..config import config
 from ..evaluators.two_stage_evaluators import (two_stage_eval_cv,
                                                two_stage_eval_jd)
 
+CSV_OUTPUT_DIR = config.CSV_OUTPUT_DIR
 
 def process_all_jobs(model_tuples: List[Tuple[str, RunnableSequence]], job_text: Union[str, List[str]], output_dir: Union[str, Path]):
 
@@ -22,7 +24,7 @@ def process_all_jobs(model_tuples: List[Tuple[str, RunnableSequence]], job_text:
     else:
         job_tuples = [(str(uuid4()), job_text)]
         
-    pd.DataFrame(job_tuples, columns=["job_id", "job_text"]).to_csv("job_tuples.csv", index=False)
+    pd.DataFrame(job_tuples, columns=["job_id", "job_text"]).to_csv(os.path.join(CSV_OUTPUT_DIR, "job_tuples.csv"), index=False)
     logging.info(f"saved job tuple")
 
         
