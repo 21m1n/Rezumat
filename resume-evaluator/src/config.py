@@ -32,7 +32,7 @@ class Config:
     
     def setup_directories(self):
         """Create necessary directories, removing existing ones if they exist."""
-        directories = [self.PDF_UPLOAD_FOLDER, self.JOBS_OUTPUT_DIR, self.CV_OUTPUT_DIR]
+        directories = [self.PDF_UPLOAD_FOLDER, self.JOBS_OUTPUT_DIR, self.CV_OUTPUT_DIR, self.CSV_OUTPUT_DIR]
         for directory in directories:
             if directory.exists():
                 shutil.rmtree(directory)
