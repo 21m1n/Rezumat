@@ -64,23 +64,25 @@ def read_job_data() -> List[Tuple[str, dict]]:
     for file in Path(JOBS_OUTPUT_DIR).glob("*.json"):
         job_id = file.stem.split("_")[0]
         with open(file, "r") as f:
-            job_description = json.load(f)
-            job_data.append((job_id, job_description))
+            job_analysis = json.load(f)
+            job_data.append((job_id, job_analysis))
     return job_data
 
 def evaluate_cv(cv_grader_tuple: Tuple[str, RunnableSequence], job_data: List[Tuple[str, dict]], cv_data: List[Tuple[str, str]]) -> pd.DataFrame:
     """Evaluate the CVs"""
     process_all_pairs(cv_grader_tuple, job_data, cv_data, output_dir=CV_OUTPUT_DIR)
   
-def calculate_and_save_fit_scores(input_data: InputModel, cv_data: List[Tuple[str, str]], job_tuple: List[Tuple[str, dict]]) -> pd.DataFrame:
+def calculate_and_save_fit_scores(input_data: InputModel, cv_data: List[Tuple[str, str]], job_tuple: List[Tuple[str, dict]], job_data: List[Tuple[str, dict]]) -> pd.DataFrame:
     """Calculate the fit scores"""
     fit_scores_df = calculate_fit_scores(CV_OUTPUT_DIR, input_data.weights)
     
     cv_df = pd.DataFrame(cv_data, columns=["cv_id", "cv_text"])
     jd_df = pd.DataFrame(job_tuple, columns=["job_id", "job_text"])
-    
+    job_df = pd.DataFrame(job_data, columns=["job_id", "job_analysis"])
+              
     fit_scores_df = pd.merge(fit_scores_df, jd_df, on="job_id", how="left")
     fit_scores_df = pd.merge(fit_scores_df, cv_df, on="cv_id", how="left")
+    fit_scores_df = pd.merge(fit_scores_df, job_df, on="job_id", how="left")
     fit_scores_df.to_csv(f"{CSV_OUTPUT_DIR}/fit_scores_with_text.csv", index=False)
     return fit_scores_df
 
@@ -120,7 +122,7 @@ def process_input(text_input, additional_text, file_upload, input_type, api_key,
     cv_grader_tuple = get_eval_chain(input_data.interface, input_data.model, os.getenv("GROQ_API_KEY"), eval_type="cv")
     evaluate_cv(cv_grader_tuple, job_data, cv_data)
     
-    eval_results = calculate_and_save_fit_scores(input_data, cv_data, job_tuples)
+    eval_results = calculate_and_save_fit_scores(input_data, cv_data, job_tuples, job_data)
     
     logging.info(f"processing completed. results saved in : {CSV_OUTPUT_DIR}, results type: {type(eval_results)}")
     return eval_results
@@ -181,7 +183,10 @@ def create_gradio_interface():
                 kiv_count = gr.Number(label="KIV")
                 
             with gr.Row():
-                top_candidates = gr.Dropdown(label="Top Candidates")
+                with gr.Column():
+                    suitability_filter = gr.Radio(["All", "Yes", "No", "KIV"], label="filter by suitability", value="All")
+                with gr.Column():
+                    top_candidates = gr.Dropdown(label="Top Candidates")
             
             with gr.Row():
                 jd_display = gr.TextArea(label="Job Description", interactive=False)
@@ -275,7 +280,21 @@ def create_gradio_interface():
                     None,                      # Eval results state
                     error_msg                  # Debug output
                 ]
+        
+        def update_candidate_list(suitability, results_df):
+            if results_df is None or results_df.empty:
+                return gr.Dropdown(choices=[], value=None)
             
+            if suitability != "All":
+                filtered_df = results_df[results_df["suitability"] == suitability.lower()]
+            else:
+                filtered_df = results_df
+            
+            candidates = filtered_df.sort_values(by="recalibrated_overall_score", ascending=False)
+            candidate_list = candidates["cv_id"].tolist()
+            
+            return gr.Dropdown(choices=candidate_list, value=candidate_list[0] if candidate_list else None)
+        
         def display_candidate_info(cv_id, results_df):
 
             if results_df is None or results_df.empty:
@@ -310,6 +329,16 @@ def create_gradio_interface():
             fn=reset_interface,
             inputs=[],
             outputs=[jd_text_input, additional_text, file_upload, input_type, api_key, interface, model, technical_skills, soft_skills, experience, education]
+        )
+        
+        
+        
+
+            
+        suitability_filter.change(
+            fn=update_candidate_list,
+            inputs=[suitability_filter, eval_results],
+            outputs=[top_candidates]
         )
         
         top_candidates.change(
