@@ -21,6 +21,10 @@ class Config(BaseSettings):
     TEMPERATURE: float = 0.0
     MAX_TOKENS: int = 8192
 
+    GROQ_URL: str = "https://api.groq.com/openai/v1/models"
+    OPENAI_URL: str = "https://api.openai.com/v1/models"
+    ANTHROPIC_URL: str = "https://api.anthropic.com/v1/models"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

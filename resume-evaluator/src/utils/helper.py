@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 import gradio as gr
+import requests
 
 from ..config import config
 from ..utils.logger import get_logger
@@ -12,22 +13,40 @@ from ..utils.logger import get_logger
 logger = get_logger(__name__)
 
 
-def set_api_key(api_key: str, model_text: str) -> str:
-    """set the api key for the model"""
+def set_and_verify_api_key(api_key: str, interface: str) -> str:
+    """set and verify the api key for the model"""
 
     env_var_map = {
         "groq": "GROQ_API_KEY",
         "openai": "OPENAI_API_KEY",
         "anthropic": "ANTHROPIC_API_KEY",
-        "ollama": "OLLAMA_API_KEY",
     }
-    env_var = env_var_map.get(model_text.lower())
 
-    if env_var:
-        os.environ[env_var] = api_key
-        logger.info(f"API key set successfully for {model_text}")
+    url_map = {
+        "groq": config.GROQ_URL,
+        "openai": config.OPENAI_URL,
+        "anthropic": config.ANTHROPIC_URL,
+    }
+
+    interface = interface.lower()
+
+    if interface in env_var_map:
+        os.environ[env_var_map[interface]] = api_key
+        url = url_map[interface]
+        headers = {"Authorization": f"Bearer {api_key}"}
+        try:
+            response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                logger.info(f"API key set successfully for {interface}")
+            else:
+                logger.error(f"Error verifying API key: {response.status_code}")
+                raise gr.Error(f"Error verifying API key: {response.status_code}")
+        except Exception as e:
+            logger.error(f"Error verifying API key: {e}")
+            raise gr.Error(f"Error verifying API key: {e}")
     else:
-        logger.error(f"Invalid model text: {model_text}")
+        logger.error(f"Unsupported model: {interface}")
+        raise gr.Error(f"Unsupported model: {interface}")
 
 
 def format_job_description_analysis(json_data):
