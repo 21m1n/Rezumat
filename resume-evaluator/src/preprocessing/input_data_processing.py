@@ -1,4 +1,3 @@
-import logging
 import os
 from typing import List, Tuple
 from uuid import uuid4
@@ -54,7 +53,7 @@ def process_input(
             weights=weights,
         )
     except ValueError as e:
-        logging.error(f"process_input: Error validating input: {str(e)}")
+        logger.error(f"process_input: Error validating input: {str(e)}")
         return pd.DataFrame()
 
     # JD EVALUATION
@@ -86,7 +85,7 @@ def process_input(
         input_data, cv_data, job_tuples, job_data
     )
 
-    logging.info(
+    logger.info(
         f"processing completed. results saved in : {config.CSV_OUTPUT_DIR}, results type: {type(eval_results)}"
     )
     return eval_results
@@ -122,7 +121,7 @@ def process_cv_data(input_data: InputModel, file_upload: List[gr.FileData]) -> N
             cv_data = [(str(uuid4()), cv) for cv in cv_data]
             return cv_data
         except Exception as e:
-            logging.error(f"Error processing file: {str(e)}")
+            logger.error(f"Error processing file: {str(e)}")
             raise e
 
 

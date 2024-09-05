@@ -1,5 +1,4 @@
 import json
-import logging
 import os
 import time
 from typing import List, Tuple, Union
@@ -36,17 +35,17 @@ def two_stage_eval_jd(
             json_file = os.path.join(output_dir, f"{job_id}_{model_name}.json")
             with open(json_file, "w") as f:
                 json.dump(result, f, indent=4)
-                logging.info(f"Saved {model_name} result for job_id: {job_id}")
+                logger.info(f"Saved {model_name} result for job_id: {job_id}")
             time.sleep(config.SLEEP_TIME)  # Add a small delay to avoid rate limiting
 
         except Exception as e:
             error_msg = f"Error with {model_name} for job_id: {job_id}. Error: {str(e)}"
-            logging.error(error_msg)
+            logger.error(error_msg)
             print(error_msg)
 
     if not model_results:
         error_msg = f"All models failed for job_id: {job_id}."
-        logging.error(error_msg)
+        logger.error(error_msg)
         print(error_msg)
         return None
 
@@ -81,11 +80,11 @@ def two_stage_eval_cv(
 
         except Exception as e:
             error_msg = f"Error with {model_name} for job_id: {job_id}. Error: {str(e)}"
-            logging.error(error_msg)
+            logger.error(error_msg)
             print(error_msg)
 
     if not model_results:
         error_msg = f"All models failed for job_id: {job_id}."
-        logging.error(error_msg)
+        logger.error(error_msg)
         print(error_msg)
         return None

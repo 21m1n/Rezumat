@@ -7,7 +7,7 @@ import pandas as pd
 
 from .config import config
 from .preprocessing.input_data_processing import process_input
-from .utils.helper import format_job_description_analysis, set_api_key
+from .utils.helper import format_job_description_analysis, set_and_verify_api_key
 from .utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -23,6 +23,7 @@ def create_gradio_app():
 
         # add a state to store the eval_results
         eval_results = gr.State()
+        api_key_status = gr.State()
 
         # INITIAL VIEW
         with gr.Group() as initial_view:
@@ -162,16 +163,6 @@ def create_gradio_app():
                 20,  # experience
                 10,  # education
             ]
-
-        def set_key_and_process_input(*args):
-            """a wrapper function to set the api key and process the input"""
-            api_key_value = args[4]
-            interface_value = args[5]
-
-            # set the api key
-            set_api_key(api_key_value, interface_value)
-
-            return process_input(*args)
 
         # Event handlers: process results
         def process_results(results_df: Union[pd.DataFrame, List[dict]]):
@@ -344,7 +335,11 @@ def create_gradio_app():
         )
 
         submit_btn.click(
-            fn=set_key_and_process_input,
+            fn=set_and_verify_api_key,
+            inputs=[api_key, interface],
+            outputs=api_key_status,
+        ).success(
+            fn=process_input,
             inputs=[
                 jd_text_input,
                 additional_text,
