@@ -2,7 +2,7 @@ research/*
 .DS_Store
 .env
 *.csv
-logs/
+evaluation_log.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
