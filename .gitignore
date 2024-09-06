@@ -1,10 +1,7 @@
-data/*
-research/repos/*
+research/*
 .DS_Store
 .env
 *.csv
-output_*/
-data/
 logs/
 
 # Byte-compiled / optimized / DLL files
