@@ -6,8 +6,8 @@ from typing import List, Tuple, Union
 import pandas as pd
 from langchain_core.runnables import RunnableSequence
 
-from ..config import config
-from ..utils.logger import get_logger
+from rezumat.config import config
+from rezumat.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
