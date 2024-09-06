@@ -8,25 +8,36 @@ Rézumat leverages LLMs to evaluate candidate resumes against job descriptions. 
 ## Project Structure
 
 ```
-rezumat-project/
-├── data/
+.
+├── .gitignore
+├── README.md
+├── CHANGELOG.md         
+├── LICENSE               
+├── pyproject.toml
+├── setup.cfg
+├── requirements.txt
+├── requirements-dev.txt
+├── Dockerfile
+├── docker-compose.yml
+├── .github/
+│   └── workflows/
 ├── docs/
+├── tests/
+├── data/
 ├── logs/
+├── scripts/
+├── services/            
 ├── rezumat/
+│   ├── __init__.py
+│   ├── config.py
+│   ├── main.py
+│   ├── app.py
 │   ├── evaluators/
 │   ├── models/
 │   ├── preprocessing/
 │   ├── prompts/
-│   ├── utils/
-│   ├── __init__.py
-│   ├── app.py
-│   ├── config.py
-│   └── main.py
-├── tests/
-├── .gitignore
-├── Dockerfile
-├── README.md
-└── requirements.txt
+│   └── utils/
+└── research/
 ```
 
 ## Installation
