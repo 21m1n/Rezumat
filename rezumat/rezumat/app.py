@@ -5,10 +5,10 @@ from typing import List, Union
 import gradio as gr
 import pandas as pd
 
-from .config import config
-from .preprocessing.input_data_processing import process_input
-from .utils.helper import format_job_description_analysis, set_and_verify_api_key
-from .utils.logger import get_logger
+from rezumat.config import config
+from rezumat.preprocessing.input_data_processing import process_input
+from rezumat.utils.helper import format_job_description_analysis, set_and_verify_api_key
+from rezumat.utils.logger import get_logger
 
 logger = get_logger(__name__)
 

@@ -1,13 +1,15 @@
 import logging
 import shutil
+import sys
 from pathlib import Path
+from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Config(BaseSettings):
     TITLE: str = "✏️ Resume Evaluator"
-    BASE_DIR: Path = Path("./resume-evaluator").resolve()
+    BASE_DIR: Path = Path(__file__).resolve().parent.parent
     PDF_UPLOAD_FOLDER: Path = BASE_DIR / "data/input/pdf"
     OUTPUT_DIR: Path = BASE_DIR / "data/output"
     CSV_OUTPUT_DIR: Path = OUTPUT_DIR / "csv"
@@ -37,6 +39,7 @@ class Config(BaseSettings):
         self.setup_directories()
 
     def setup_directories(self):
+        # [TODO] come up with a better way to handle this
         """Create necessary directories, removing existing ones if they exist."""
         directories = [
             self.PDF_UPLOAD_FOLDER,
@@ -49,7 +52,13 @@ class Config(BaseSettings):
                 shutil.rmtree(directory)
             directory.mkdir(parents=True, exist_ok=True)
 
-    def setup_logging(self):
+    def setup_logging(self, log_file: Optional[Path] = None):
+        """Setup logging configuration.
+
+        Args:
+            log_file: Path to the log file. If not provided, the default log file path is used.
+        """
+        log_file = log_file or self.LOG_FILE
         logging.basicConfig(
             level=getattr(logging, self.LOG_LEVEL),
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -57,7 +66,14 @@ class Config(BaseSettings):
             filemode="a",
         )
 
+    def update_python_path(self):
+        """Update the Python path to include the project root."""
+        project_root = self.BASE_DIR.parent
+        if str(project_root) not in sys.path:
+            sys.path.insert(0, str(project_root))
+
 
 # global instance of Config
 config = Config()
 config.setup_logging()
+config.update_python_path()

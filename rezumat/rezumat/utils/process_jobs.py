@@ -8,9 +8,9 @@ import pandas as pd
 from langchain_core.runnables.base import RunnableSequence
 from tqdm import tqdm
 
-from ..config import config
-from ..evaluators.two_stage_evaluators import two_stage_eval_cv, two_stage_eval_jd
-from ..utils.logger import get_logger
+from rezumat.config import config
+from rezumat.evaluators.two_stage_evaluators import two_stage_eval_cv, two_stage_eval_jd
+from rezumat.utils.logger import get_logger
 
 logger = get_logger(__name__)
 

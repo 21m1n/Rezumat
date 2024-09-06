@@ -6,14 +6,14 @@ import gradio as gr
 import pandas as pd
 from langchain_core.runnables.base import RunnableSequence
 
-from ..config import config
-from ..evaluators.chains import get_eval_chain
-from ..evaluators.post_analysis import calculate_fit_scores
-from ..models.input_models import CandidateEvaluationWeights, InputModel
-from ..preprocessing.parsers.pdf_parser import process_pdfs
-from ..utils.helper import read_job_data, save_upload_file
-from ..utils.logger import get_logger
-from ..utils.process_jobs import process_all_jobs, process_all_pairs
+from rezumat.config import config
+from rezumat.evaluators.chains import get_eval_chain
+from rezumat.evaluators.post_analysis import calculate_fit_scores
+from rezumat.models.input_models import CandidateEvaluationWeights, InputModel
+from rezumat.preprocessing.parsers.pdf_parser import process_pdfs
+from rezumat.utils.helper import read_job_data, save_upload_file
+from rezumat.utils.logger import get_logger
+from rezumat.utils.process_jobs import process_all_jobs, process_all_pairs
 
 logger = get_logger(__name__)
 

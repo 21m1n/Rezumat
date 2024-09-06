@@ -5,7 +5,7 @@ from typing import Dict
 import pandas as pd
 from tqdm import tqdm
 
-from ..utils.logger import get_logger
+from rezumat.utils.logger import get_logger
 
 logger = get_logger(__name__)
 

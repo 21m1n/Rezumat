@@ -7,8 +7,8 @@ from typing import List, Tuple
 import gradio as gr
 import requests
 
-from ..config import config
-from ..utils.logger import get_logger
+from rezumat.config import config
+from rezumat.utils.logger import get_logger
 
 logger = get_logger(__name__)
 

@@ -9,10 +9,10 @@ from langchain_groq import ChatGroq
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 
-from ..config import config
-from ..prompts.two_stage_eval_cv import TWO_STAGE_EVAL_CV_PROMPT
-from ..prompts.two_stage_eval_jd import TWO_STAGE_EVAL_JD_PROMPT
-from ..utils.logger import get_logger
+from rezumat.config import config
+from rezumat.prompts.two_stage_eval_cv import TWO_STAGE_EVAL_CV_PROMPT
+from rezumat.prompts.two_stage_eval_jd import TWO_STAGE_EVAL_JD_PROMPT
+from rezumat.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
