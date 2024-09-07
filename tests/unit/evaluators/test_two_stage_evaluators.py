@@ -1,44 +1,9 @@
 from unittest.mock import Mock, mock_open, patch
 
-import pytest
 from langchain_core.runnables import RunnableSequence
 
 from rezumat.evaluators.two_stage_evaluators import two_stage_eval_jd, two_stage_eval_cv
 from rezumat.config import config
-
-
-# creating mock objects for the test
-@pytest.fixture
-def mock_model_tuple():
-    mock_grader = Mock(spec=RunnableSequence)
-    mock_grader.invoke.return_value = {
-        "technical_skills": {
-            "essential": ["Python", "JavaScript"],
-            "advantageous": ["Docker", "AWS"],
-        },
-        "soft_skills": ["Communication", "Teamwork"],
-        "level_of_exp": "Mid-level",
-        "education": ["Bachelor's in Computer Science"],
-    }
-    return ("model1", mock_grader)
-
-
-@pytest.fixture
-def mock_job_tuple():
-    return (
-        "123456",
-        "software engineer with 3 years of experience specializing in python and machine learning",
-    )
-
-
-@pytest.fixture
-def mock_output_dir():
-    return "tests/fixtures"
-
-
-@pytest.fixture
-def mock_cv_tuple():
-    return ("456789", "Experienced Python developer with 7 years in the industry")
 
 
 def test_successful_evaluation(mock_model_tuple, mock_job_tuple, mock_output_dir):
