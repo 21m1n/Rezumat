@@ -5,12 +5,26 @@ from pathlib import Path
 from typing import List, Union
 
 from pypdf import PdfReader
+from pypdf.errors import EmptyFileError
 from tqdm import tqdm
 
+from rezumat.utils.logger import get_logger
 
-def parse_pdf(file_path):
-    reader = PdfReader(file_path)
-    return [page.extract_text() for page in reader.pages]
+logger = get_logger(__name__)
+
+
+def parse_pdf(file_path: Union[str, Path]) -> List[str]:
+    if not os.path.exists(file_path):
+        logger.error(f"File not found: {file_path}")
+        raise FileNotFoundError(f"File not found: {file_path}")
+    try:
+        reader = PdfReader(file_path)
+        return [page.extract_text() for page in reader.pages]
+    except EmptyFileError:
+        return ""
+    except Exception as e:
+        logger.error(f"Error parsing PDF: {e}")
+        return ""
 
 
 def process_pdfs(pdf_path: Union[str, Path]) -> List[str]:
