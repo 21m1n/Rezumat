@@ -69,7 +69,7 @@ class Config(BaseSettings):
 
         # rotating file handler (10MB per file, max 5 files)
         fh = RotatingFileHandler(log_file, maxBytes=1024 * 1024 * 10, backupCount=5)
-        fh.setLevel(self.DEBUG)
+        fh.setLevel(logging.DEBUG)
 
         formatter = logging.Formatter(
             "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
