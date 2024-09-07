@@ -1,0 +1,20 @@
+{
+    "technical_skills": {
+        "essential": [
+            "Python",
+            "JavaScript"
+        ],
+        "advantageous": [
+            "Docker",
+            "AWS"
+        ]
+    },
+    "soft_skills": [
+        "Communication",
+        "Teamwork"
+    ],
+    "level_of_exp": "Mid-level",
+    "education": [
+        "Bachelor's in Computer Science"
+    ]
+}
