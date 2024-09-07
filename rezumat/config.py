@@ -1,6 +1,7 @@
 import logging
 import shutil
 import sys
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Optional
 
@@ -59,12 +60,31 @@ class Config(BaseSettings):
             log_file: Path to the log file. If not provided, the default log file path is used.
         """
         log_file = log_file or self.LOG_FILE
-        logging.basicConfig(
-            level=getattr(logging, self.LOG_LEVEL),
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-            filename=self.LOG_FILE,
-            filemode="a",
+        logger = logging.getLogger("[Rezumat]")
+        logger.setLevel(logging.DEBUG)
+
+        # console handler
+        ch = logging.StreamHandler()
+        ch.setLevel(self.LOG_LEVEL)
+
+        # rotating file handler (10MB per file, max 5 files)
+        fh = RotatingFileHandler(log_file, maxBytes=1024 * 1024 * 10, backupCount=5)
+        fh.setLevel(self.DEBUG)
+
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
+        ch.setFormatter(formatter)
+        fh.setFormatter(formatter)
+
+        # add the handlers to the logger
+        logger.addHandler(ch)
+        logger.addHandler(fh)
+
+        logger.addHandler(ch)
+        logger.addHandler(fh)
+
+        return logger
 
     def update_python_path(self):
         """Update the Python path to include the project root."""
@@ -75,5 +95,6 @@ class Config(BaseSettings):
 
 # global instance of Config
 config = Config()
-config.setup_logging()
 config.update_python_path()
+
+logger = config.setup_logging()
